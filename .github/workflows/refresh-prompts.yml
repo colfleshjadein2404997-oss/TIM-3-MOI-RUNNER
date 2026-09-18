@@ -1,0 +1,92 @@
+name: Refresh 600 prompts once
+
+on:
+  push:
+    paths:
+      - ".github/workflows/refresh-prompts.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build 600 distinct scene prompts
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          locations = """cliffside windmill village|underground crystal railway platform|floating lotus library|desert astronomer caravan camp|rainforest canopy research deck|alpine cheese market square|volcanic island fruit harbor|canal-side bicycle flower district|moonlit bamboo tea pavilion|coral reef glass tunnel|steampunk clocktower workshop|arctic aurora fishing pier|sunflower farm tractor barn|ancient pottery courtyard|city rooftop beekeeping garden|storybook mushroom post office|riverboat kitchen galley|seaside kite-maker studio|mountain cable-car cafe|lantern-lit noodle alley|tropical bird rescue veranda|snowy hot-spring entrance|harvest pumpkin greenhouse|retro cinema projection booth|oceanographic map room|forest ranger lookout cabin|candy-colored tram depot|watercolor artist river dock|robotics school laboratory|orchard cider pressing shed|ceramic tile mosaic hall|desert oasis spice bazaar|coastal shell collector hut|winter toy repair attic|spring tulip ferry terminal|autumn acorn craft lodge|miniature train museum|planetarium souvenir shop|old radio broadcasting room|botanical seed archive|harbor lighthouse kitchen|mountain herb drying loft|rainy umbrella repair kiosk|festival mask painting tent|aquarium maintenance workshop|vintage camera rental shop|island weather station|forest bakery delivery porch|castle greenhouse conservatory|paper lantern factory floor|river delta birdwatching hide|ice-cream bicycle cart plaza|wooden puppet theatre backstage|marine biology specimen room|glassblower market stall|country quilt sewing room|city jazz record shop|tea plantation weighing house|cactus nursery checkout corner|ferryboat luggage deck""".split("|")
+
+          activities = """workers sort freshly delivered supplies while a handcart waits beside stacked baskets|a caretaker prepares a display before opening, arranging tools, containers and decorative pieces|two visitors compare collected objects on a long table while shelves and hanging equipment fill the walls|a quiet cleanup follows a busy event, with folded cloths, buckets, trays and misplaced accessories|an artisan demonstrates a careful repair beside organized spare parts, boxes and measuring tools|a delivery has just arrived, leaving parcels, crates, ropes, signs and personal belongings in useful clusters|a seasonal celebration is being prepared with garlands, food containers, lanterns, instruments and craft materials|a morning inventory check covers counters and floor racks with separated merchandise and work equipment|a small class practices a hands-on lesson using models, notebooks, tools, samples and colorful demonstration objects|closing time leaves half-finished tasks visible, including stacked chairs, cleaning gear, packed goods and an open workbench""".split("|")
+
+          times = """early sunrise|bright late morning|clear noon|warm golden afternoon|blue-hour dusk|crisp evening|soft rainy daylight|sunlit winter morning|vivid spring afternoon|amber autumn evening|cool coastal morning|glowing festival night""".split("|")
+
+          objects = """red toolbox|blue enamel kettle|striped tote bag|yellow rain boots|green watering can|brass desk bell|wooden stool|ceramic cat figurine|folded map|orange thermos|purple umbrella|woven basket|small radio|glass jar|paper fan|toy sailboat|metal lunchbox|potted fern|round wall clock|canvas backpack|white teapot|wooden crate|hand mirror|binoculars|paint tin|rolled scarf|fruit bowl|desk lamp|wind-up toy|bamboo tray|camera case|flower vase|rubber ball|tiny ladder|copper pan|picnic blanket|gardening gloves|model train|shell necklace|book stack|lantern|birdhouse|rope coil|sketchbook|tin watering pitcher|plaid cap|sugar jar|wooden mallet|sewing basket|tea caddy|magnifying glass|postcard rack|toy drum|blue bucket|red bicycle helmet|ceramic bowl|plant mister|folding chair|wooden signboard|market scale|compass|small suitcase|apron|paintbrush cup|bottle carrier|clockwork bird|raincoat|bread basket|wicker hamper|flashlight|hand broom|spice tin|model airplane|fishing float|garden trowel|measuring tape|music box|thermometer|clay pitcher|paper kite|wooden puzzle|bead necklace|rolling pin|ticket punch|bellows|tea whisk|scoop|stamp pad|toy robot|bin of apples|candle holder|folded towel|watering hose|chalkboard slate|wool hat|wooden tray|metal funnel|glass bottle|carved duck|notebook|spool rack|hand rake|serving plate|small globe|rope basket|lantern hook""".split("|")
+
+          templates = [
+              "During {time}, the {loc} becomes a busy visual story: {act}. Feature {objs}; keep the center readable while details spread around the sides.",
+              "{loc_cap} at {time}: {act}. Populate the setting with {objs}, each fully visible and separated across foreground and background.",
+              "Show one coherent moment inside the {loc} under {time} light, where {act}. Include {objs}; use layered depth and a calm central viewing zone.",
+              "Illustrate {time} at the {loc}. {act_cap}. Make {objs} easy to recognize, with clear gaps between neighboring props.",
+              "Build a detailed {loc} scene in {time} conditions. {act_cap}. Place {objs} around the working area, leaving useful negative space near the middle.",
+              "Capture the {loc} in {time} light while {act}. Distinct visible props should include {objs}; arrange them at varied heights and distances.",
+              "A lively but orderly {loc} appears at {time}; {act}. Add {objs} as individually readable objects around an uncluttered center.",
+              "Create one continuous {loc} environment at {time}. {act_cap}. Clearly show {objs}, using foreground, midground and background placements.",
+              "At {time}, focus on the {loc} as {act}. Surround the action with {objs}; every item should have a complete silhouette and believable placement.",
+              "Depict the {loc} during {time}, when {act}. Work {objs} into the environment as separate visual anchors without blocked shapes.",
+              "Frame a wide view of the {loc} in {time} lighting: {act}. Visible scene accents are {objs}; keep object boundaries crisp and the center relatively open.",
+              "Use {time} illumination for a richly furnished {loc}, where {act}. Incorporate {objs} with varied scale and position so each prop stays identifiable.",
+              "Present the {loc} at {time} as a self-contained narrative scene. {act_cap}. Arrange {objs} across counters, hooks and floor spaces while keeping forms distinct.",
+              "Set the action at a {loc} during {time}: {act}. Make room for {objs}, spaced naturally with readable gaps and an asymmetric composition.",
+              "Design a panoramic {loc} view in {time} light. The current task is that {act}. Add {objs} as separate points of interest without covering one another.",
+              "Render a story-rich {loc} under {time} conditions, capturing the instant when {act}. Include {objs}; keep every prop physically plausible and isolated.",
+              "Inside the {loc}, {time} lighting reveals that {act}. Surround the activity with {objs}; use shelves, corners and floor space to avoid a congested middle.",
+              "Make the {loc} feel active at {time}: {act}. Specific readable items are {objs}; distribute them in small clusters with breathing room.",
+              "Create a crisp environmental tableau of the {loc} at {time}. {act_cap}. Ensure {objs} appear as distinct objects across several depth planes.",
+              "At the {loc} in {time} light, tell a compact visual story in which {act}. Add {objs}, balancing rich side detail with a clean center.",
+          ]
+
+          prompts = []
+          for i, loc in enumerate(locations):
+              for j, act in enumerate(activities):
+                  n = i * len(activities) + j
+                  time = times[(n * 7 + i) % len(times)]
+                  picks = []
+                  start = (n * 13 + i * 5 + j * 3) % len(objects)
+                  step = 17 + (n % 7) * 2
+                  k = 0
+                  while len(picks) < 7:
+                      item = objects[(start + k * step) % len(objects)]
+                      if item not in picks:
+                          picks.append(item)
+                      k += 1
+                  objs = ", ".join(picks[:-1]) + ", and " + picks[-1]
+                  template = templates[(n * 11 + i + j) % len(templates)]
+                  prompts.append(template.format(
+                      time=time,
+                      loc=loc,
+                      loc_cap=loc.capitalize(),
+                      act=act,
+                      act_cap=act[0].upper() + act[1:],
+                      objs=objs,
+                  ))
+
+          assert len(prompts) == 600
+          assert len(set(prompts)) == 600
+          assert all(prompt.strip() for prompt in prompts)
+          Path("extra-prompts.txt").write_text("\n".join(prompts) + "\n", encoding="utf-8")
+          print("wrote", len(prompts), "unique prompts")
+          PY
+      - name: Commit replacement catalog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add extra-prompts.txt
+          git commit -m "Replace catalog with 600 new distinct prompts [skip ci]"
+          git push
