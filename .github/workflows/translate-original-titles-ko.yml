@@ -1,0 +1,89 @@
+name: Translate original title catalog to Korean once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/translate-original-titles-ko.yml'
+      - 'extra-titles.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  translate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Translate original Japanese title copy without changing content
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          path = Path('extra-titles.txt')
+          text = path.read_text(encoding='utf-8')
+          replacements = (
+              ('【脳トレ間違い探し】', '【두뇌훈련 틀린그림찾기】'),
+              ('【脳トレ】', '【두뇌훈련】'), ('【クイズ】', '【퀴즈】'),
+              ('脳トレで今日の調子をチェック！', '두뇌 훈련으로 오늘의 컨디션을 체크!'),
+              ('3つの違いに気づけますか？', '3개의 차이를 알아챌 수 있나요?'),
+              ('全部見つけたら観察名人！', '전부 찾으면 관찰의 달인!'),
+              ('90秒で脳の若さをチェック！', '90초로 뇌의 젊음을 체크!'),
+              ('やさしく楽しく頭の体操！', '쉽고 즐겁게 두뇌 운동!'),
+              ('毎日のひらめき力を試そう！', '매일의 번뜩임 능력을 시험해 보세요!'),
+              ('見つけるほど頭がすっきり！', '찾을수록 머리가 개운해져요!'),
+              ('最後の難問まで解けますか？', '마지막 어려운 문제까지 풀 수 있나요?'),
+              ('大人の集中力チャレンジ！', '어른의 집중력 챌린지!'),
+              ('ゆっくり探して脳を元気に！', '천천히 찾아 뇌를 건강하게!'),
+              ('気づいた瞬間が気持ちいい！', '알아챈 순간이 기분 좋아요!'),
+              ('あなたの観察力は何点？', '당신의 관찰력은 몇 점?'),
+              ('目と頭のウォーミングアップ！', '눈과 머리의 워밍업!'),
+              ('今日は何か所見つかる？', '오늘은 몇 곳을 찾을 수 있을까요?'),
+              ('ぱっと見では分からない！', '언뜻 봐서는 알 수 없어요!'),
+              ('見やすい日常イラスト10問', '보기 쉬운 일상 일러스트 10문제'),
+              ('季節を感じるイラスト10問', '계절을 느낄 수 있는 일러스트 10문제'),
+              ('形・色・数を比べる全10問', '모양・색・수를 비교하는 총 10문제'),
+              ('少しずつ難しくなる全10問', '조금씩 어려워지는 총 10문제'),
+              ('食卓と町の風景から全10問', '식탁과 거리 풍경에서 찾는 총 10문제'),
+              ('のんびり挑戦できる10問', '느긋하게 도전할 수 있는 10문제'),
+              ('シニアも楽しめるやさしい10問', '시니어도 즐길 수 있는 쉬운 10문제'),
+              ('後半ほど手ごわい全10問', '후반으로 갈수록 까다로운 총 10문제'),
+              ('ひらめきが楽しい画像10問', '번뜩임이 즐거운 그림 10문제'),
+              ('暮らしの風景から探す10問', '생활 풍경에서 찾는 10문제'),
+              ('大きく見やすい絵で10問', '크고 보기 쉬운 그림으로 10문제'),
+              ('見落としやすい違いを探す10問', '놓치기 쉬운 차이를 찾는 10문제'),
+              ('家族で楽しむイラスト10問', '가족과 함께 즐기는 일러스트 10문제'),
+              ('楽しく集中できる全10問', '즐겁게 집중할 수 있는 총 10문제'),
+              ('最後に達人級が待つ全10問', '마지막에 달인급이 기다리는 총 10문제'),
+              ('懐かしい風景で楽しむ10問', '그리운 풍경으로 즐기는 10문제'),
+              ('観察力を鍛えるイラスト10問', '관찰력을 단련하는 일러스트 10문제'),
+              ('毎日続けたい脳活10問', '매일 계속하고 싶은 두뇌 활동 10문제'),
+              ('今日の脳活にぴったりな10問', '오늘의 두뇌 활동에 딱 맞는 10문제'),
+              ('3つの間違いを探す全10問', '3개의 틀린 부분을 찾는 총 10문제'),
+          )
+          for jp, ko in replacements:
+              text = text.replace(jp, ko)
+
+          lines = [line for line in text.splitlines() if line.strip()]
+          if len(lines) != 300:
+              raise SystemExit(f'Expected exactly 300 titles, got {len(lines)}')
+          for i, line in enumerate(lines, 100):
+              if not line.endswith(f'#{i}'):
+                  raise SystemExit(f'Title numbering/content order changed at #{i}: {line}')
+          if re.search(r'[\u3040-\u30ff\u31f0-\u31ff]', text):
+              raise SystemExit('Japanese kana remains after title translation')
+          path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+      - name: Commit translated catalog
+        run: |
+          if git diff --quiet -- extra-titles.txt; then
+            echo 'Title catalog is already Korean; nothing to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add extra-titles.txt
+          git commit -m 'Translate original 300 titles to Korean [skip ci]'
+          git push
